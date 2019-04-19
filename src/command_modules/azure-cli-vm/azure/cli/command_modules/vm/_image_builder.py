@@ -349,7 +349,7 @@ def process_img_tmpl_output_add_namespace(cmd, namespace):
 
 # region Custom Commands
 
-def create_image_template(client, resource_group_name, image_template_name, source, scripts=None,
+def create_image_template(cmd, client, resource_group_name, image_template_name, source, scripts=None,
                           checksum=None, location=None, no_wait=False,
                           managed_image_destinations=None, shared_image_destinations=None,
                           source_dict=None, scripts_list=None, destinations_lists=None):
@@ -357,6 +357,7 @@ def create_image_template(client, resource_group_name, image_template_name, sour
                                                 ImageTemplatePlatformImageSource, ImageTemplateIsoSource, ImageTemplateManagedImageSource,
                                                 ImageTemplateShellCustomizer, ImageTemplatePowerShellCustomizer,
                                                 ImageTemplateManagedImageDistributor, ImageTemplateSharedImageDistributor)  #pylint: disable=line-too-long
+    from azure.cli.core.commands import cached_put
 
     template_source, template_scripts, template_destinations = None, [], []
 
@@ -394,6 +395,8 @@ def create_image_template(client, resource_group_name, image_template_name, sour
             logger.info("No applicable destination found for destination {}".format(tuple([dest_type, id, loc_info])))
 
     image_template = ImageTemplate(source=template_source, customize=template_scripts, distribute=template_destinations, location=location)
+
+    return cached_put(cmd, client.virtual_machine_image_templates.create_or_update, image_template, resource_group_name, image_template_name)
     return sdk_no_wait(no_wait, client.virtual_machine_image_templates.create_or_update, image_template, resource_group_name, image_template_name)
 
 
@@ -401,6 +404,7 @@ def list_image_templates(client, resource_group_name=None):
     if resource_group_name:
         return client.virtual_machine_image_templates.list_by_resource_group(resource_group_name)
     return client.virtual_machine_image_templates.list()
+
 
 def show_build_output(client, resource_group_name, image_template_name, output_name=None):
     if output_name:
@@ -414,7 +418,9 @@ def add_template_output(cmd, client, resource_group_name, image_template_name, g
                         managed_image=None, managed_image_location=None):
     from azure.mgmt.imagebuilder.models import (ImageTemplateManagedImageDistributor, ImageTemplateVhdDistributor,
                                                 ImageTemplateSharedImageDistributor)
-    existing_image_template = client.virtual_machine_image_templates.get(resource_group_name, image_template_name)
+    from azure.cli.core.commands import cached_get, cached_put
+
+    existing_image_template = cached_get(client.virtual_machine_image_templates.get, resource_group_name, image_template_name)
     old_template_copy = copy.deepcopy(existing_image_template)
 
     if managed_image:
@@ -437,6 +443,7 @@ def add_template_output(cmd, client, resource_group_name, image_template_name, g
 
     existing_image_template.distribute.append(distributor)
     # Work around of not having update method. delete then create.
+    return cached_put(cmd, client.virtual_machine_image_templates.create_or_update, existing_image_template, resource_group_name, image_template_name)
     return _update_image_template(cmd, client, resource_group_name, image_template_name, existing_image_template, old_template_copy)
 
 def remove_template_output(cmd, client, resource_group_name, image_template_name, output_name):
@@ -498,9 +505,10 @@ def add_template_customizer(cmd, client, resource_group_name, image_template_nam
                             script_url=None, inline_script=None, valid_exit_codes=None,
                             restart_command=None, restart_check_command=None, restart_timeout=None):
     from azure.mgmt.imagebuilder.models import ImageTemplateShellCustomizer, ImageTemplatePowerShellCustomizer, ImageTemplateRestartCustomizer
-    existing_image_template = client.virtual_machine_image_templates.get(resource_group_name, image_template_name)
-    old_template_copy = copy.deepcopy(existing_image_template)
+    from azure.cli.core.commands import cached_get, cached_put
 
+    existing_image_template = cached_get(client.virtual_machine_image_templates.get, resource_group_name, image_template_name)
+    old_template_copy = copy.deepcopy(existing_image_template)
 
     if existing_image_template.customize is None:
         existing_image_template.customize = []
@@ -525,6 +533,8 @@ def add_template_customizer(cmd, client, resource_group_name, image_template_nam
 
     existing_image_template.customize.append(new_customizer)
     # Work around of not having update method. delete then create.
+
+    return cached_put(cmd, client.virtual_machine_image_templates.create_or_update, existing_image_template, resource_group_name, image_template_name)
     return _update_image_template(cmd, client, resource_group_name, image_template_name, existing_image_template, old_template_copy)
 
 
