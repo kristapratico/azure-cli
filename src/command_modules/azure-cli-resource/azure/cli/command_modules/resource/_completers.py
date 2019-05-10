@@ -46,3 +46,10 @@ def get_resource_types_completion_list(cmd, prefix, namespace, **kwargs):  # pyl
         for r in p.resource_types:
             types.append(p.namespace + '/' + r.resource_type)
     return types
+
+
+@Completer
+def get_deployment_name_list(cmd, prefix, namespace, **kwargs):  # pylint: disable=unused-argument
+    rcf = _resource_client_factory(cmd.cli_ctx)
+    result = rcf.deployments.list()
+    return [i.name for i in result]
