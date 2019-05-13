@@ -49,7 +49,7 @@ def get_resource_types_completion_list(cmd, prefix, namespace, **kwargs):  # pyl
 
 
 @Completer
-def get_deployment_name_list(cmd, prefix, namespace, **kwargs):  # pylint: disable=unused-argument
+def get_group_deployment_name_completion_list(cmd, prefix, namespace, **kwargs):  # pylint: disable=unused-argument
     rcf = _resource_client_factory(cmd.cli_ctx)
-    result = rcf.deployments.list()
-    return [i.name for i in result]
+    rg = getattr(namespace, 'resource_group_name', None)
+    return [r.name for r in rcf.deployments.list_by_resource_group(rg)]

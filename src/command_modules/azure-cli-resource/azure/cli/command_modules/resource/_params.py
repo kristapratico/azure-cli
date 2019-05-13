@@ -22,7 +22,7 @@ def load_arguments(self, _):
 
     from azure.cli.command_modules.resource._completers import (
         get_policy_completion_list, get_policy_set_completion_list, get_policy_assignment_completion_list,
-        get_resource_types_completion_list, get_providers_completion_list, get_deployment_name_list)
+        get_resource_types_completion_list, get_providers_completion_list, get_group_deployment_name_completion_list)
     from azure.cli.command_modules.resource._validators import (
         validate_lock_parameters, validate_resource_lock, validate_group_lock, validate_subscription_lock, validate_metadata, RollbackAction,
         validate_msi)
@@ -164,7 +164,7 @@ def load_arguments(self, _):
 
     with self.argument_context('group deployment') as c:
         c.argument('resource_group_name', arg_type=resource_group_name_type, completer=get_resource_group_completion_list)
-        c.argument('deployment_name', options_list=['--name', '-n'], required=True, help='The deployment name.', completer=get_deployment_name_list)
+        c.argument('deployment_name', options_list=['--name', '-n'], required=True, help='The deployment name.', completer=get_group_deployment_name_completion_list)
         c.argument('template_file', completer=FilesCompleter(), type=file_type, help="a template file path in the file system")
         c.argument('template_uri', help='a uri to a remote template file')
         c.argument('mode', arg_type=get_enum_type(DeploymentMode, default='incremental'), help='Incremental (only add resources to resource group) or Complete (remove extra resources from resource group)')
